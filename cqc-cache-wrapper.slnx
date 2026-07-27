@@ -17,6 +17,7 @@
     <Project Path="tests/ApiUnitTests/ApiUnitTests.csproj" Id="194633ad-29a2-4fc8-9846-0697b3ac34f6" />
     <Project Path="tests/CQCClientTests/CQCClientTests.csproj" Id="e4eefa29-50fa-4c91-81d9-7c1b44ddf4ea" />
     <Project Path="tests/DataAccessTests/DataAccessTests.csproj" Id="f39fbe7b-b24e-4c70-b6dd-e5c6505f0010" />
+    <Project Path="tests/IntegrationTests/IntegrationTests.csproj" Id="03c6ff78-7e7d-43ff-a4f9-29a843ae1ed5" />
     <Project Path="tests/ServiceUnitTests/ServiceUnitTests.csproj" Id="3a081584-f9f3-495f-a0eb-4d65dacebc22" />
   </Folder>
 </Solution>
