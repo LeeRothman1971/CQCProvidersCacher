@@ -4,9 +4,9 @@ namespace Service.Contracts
 {
     public record Provider
     {
-        public required string ProviderId { get; init; }
-        public required IImmutableList<string> LocationIds { get; init; }
-        public required string OrganisationType { get; init; }
+        public string? ProviderId { get; init; }
+        public IEnumerable<string>? LocationIds { get; init; }
+        public string? OrganisationType { get; init; }
         public string? OwnershipType { get; set; }
         public string? ProviderType { get; set; }
         public string? Name { get; set; }

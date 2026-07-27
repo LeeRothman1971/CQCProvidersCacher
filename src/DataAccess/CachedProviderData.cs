@@ -1,7 +1,8 @@
-﻿using System.Text.Json;
-using DataAccess.Contracts;
+﻿using DataAccess.Contracts;
 using Microsoft.Azure.Cosmos;
 using Service.Contracts;
+using System.Net;
+using System.Text.Json;
 
 namespace DataAccess;
 
@@ -19,10 +20,16 @@ public class CachedProviderData : ICachedProviderData
 
     public async Task<Provider?> Get(string id)
     {
-        using var response = await container.ReadItemStreamAsync(id, new PartitionKey(id));
-        return response.StatusCode == System.Net.HttpStatusCode.NotFound ?
-            null
-            : JsonSerializer.Deserialize<Provider>(response.Content);
+        try
+        {
+            var response = await container.ReadItemAsync<Provider>(id, new PartitionKey(id));
+
+            return response.Resource;
+        }
+        catch (CosmosException ex) when (ex.StatusCode == HttpStatusCode.NotFound)
+        {
+            return null;
+        }
     }
 
     public async Task Save(Provider provider)

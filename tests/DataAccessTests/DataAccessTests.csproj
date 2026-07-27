@@ -8,7 +8,9 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="coverlet.collector" />
+    
+    <PackageReference Include="Microsoft.Azure.Cosmos" />
+        <PackageReference Include="Aspire.Hosting.Testing" /><PackageReference Include="coverlet.collector" />
     <PackageReference Include="NSubstitute" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" />
     <PackageReference Include="xunit" />
@@ -16,6 +18,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\..\src\Aspire.AppHost\Aspire.AppHost.csproj" />
     <ProjectReference Include="..\..\src\DataAccess.Contracts\DataAccess.Contracts.csproj" />
     <ProjectReference Include="..\..\src\DataAccess\DataAccess.csproj" />
   </ItemGroup>
