@@ -1,0 +1,22 @@
+<Solution>
+  <Folder Name="/Solution Items/">
+    <File Path="cqc-api.http" />
+    <File Path="Directory.Packages.props" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Api/Api.csproj" />
+    <Project Path="src/Aspire.AppHost/Aspire.AppHost.csproj" Id="79fda2b5-1bce-45c3-8552-1e87e27746e2" />
+    <Project Path="src/Aspire.ServiceDefaults/Aspire.ServiceDefaults.csproj" Id="d48f4b88-58bb-45e2-80ab-cb8d30f5f012" />
+    <Project Path="src/CQCApiClient/CQCApiClient.csproj" Id="79d48f2e-ac54-4cee-b558-409c17144b23" />
+    <Project Path="src/DataAccess.Contracts/DataAccess.Contracts.csproj" Id="e7545d66-7718-475b-a7ae-7fe550c4dd5c" />
+    <Project Path="src/DataAccess/DataAccess.csproj" Id="b008b9d3-1007-4a53-81a2-9b300a1edb88" />
+    <Project Path="src/Service.Contracts/Service.Contracts.csproj" Id="4f3c2298-0f9f-4bd7-8ba3-386967b43fdb" />
+    <Project Path="src/Service/Service.csproj" Id="2987aa23-5e58-4baa-9797-2ec1ca5895a5" />
+  </Folder>
+  <Folder Name="/tests/">
+    <Project Path="tests/ApiUnitTests/ApiUnitTests.csproj" Id="194633ad-29a2-4fc8-9846-0697b3ac34f6" />
+    <Project Path="tests/CQCClientTests/CQCClientTests.csproj" Id="e4eefa29-50fa-4c91-81d9-7c1b44ddf4ea" />
+    <Project Path="tests/DataAccessTests/DataAccessTests.csproj" Id="f39fbe7b-b24e-4c70-b6dd-e5c6505f0010" />
+    <Project Path="tests/ServiceUnitTests/ServiceUnitTests.csproj" Id="3a081584-f9f3-495f-a0eb-4d65dacebc22" />
+  </Folder>
+</Solution>
