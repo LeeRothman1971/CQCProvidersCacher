@@ -46,20 +46,20 @@ namespace DataAccessTests
         [Fact]
         public async Task WhenGet_ThenMustCallReadItemStreamAsync()
         {
-            var responseMessage = CreateOkResponse(BuildProvider());
-            container.ReadItemStreamAsync(providerId, partitionKey).Returns(responseMessage);
+            var itemResponse = CreateOkResponse(BuildProvider());
+            container.ReadItemAsync<Provider>(providerId, partitionKey).Returns(itemResponse);
 
             await sut.Get(providerId);
 
-            await container.Received(1).ReadItemStreamAsync(providerId, partitionKey);
+            await container.Received(1).ReadItemAsync<Provider>(providerId, partitionKey);
         }
 
         [Fact]
         public async Task GivenProviderExists_WhenGet_ThenMustReturnProvider()
         {
             var expectedProvider = BuildProvider();
-            var responseMessage = CreateOkResponse(expectedProvider);
-            container.ReadItemStreamAsync(providerId, partitionKey).Returns(responseMessage);
+            var itemResponse = CreateOkResponse(expectedProvider);
+            container.ReadItemAsync<Provider>(providerId, partitionKey).Returns(itemResponse);
 
             var result = await sut.Get(providerId);
 
@@ -70,9 +70,9 @@ namespace DataAccessTests
         [Fact]
         public async Task GivenProviderDoesNotExist_WhenGet_ThenMustReturnNull()
         {
-            var responseMessage = Substitute.For<ResponseMessage>();
-            responseMessage.StatusCode.Returns(HttpStatusCode.NotFound);
-            container.ReadItemStreamAsync(providerId, partitionKey).Returns(responseMessage);
+            var itemResponse = Substitute.For<ItemResponse<Provider>>();
+            itemResponse.StatusCode.Returns(HttpStatusCode.NotFound);
+            container.ReadItemAsync<Provider>(providerId, partitionKey).Returns(itemResponse);
 
             var result = await sut.Get(providerId);
 
@@ -134,13 +134,12 @@ namespace DataAccessTests
             };
         }
 
-        private static ResponseMessage CreateOkResponse(Provider provider)
+        private static ItemResponse<Provider> CreateOkResponse(Provider provider)
         {
-            var responseMessage = Substitute.For<ResponseMessage>();
-            responseMessage.StatusCode.Returns(HttpStatusCode.OK);
-            var json = JsonSerializer.Serialize(provider);
-            responseMessage.Content.Returns(new MemoryStream(System.Text.Encoding.UTF8.GetBytes(json)));
-            return responseMessage;
+            var itemResponse = Substitute.For<ItemResponse<Provider>>();
+            itemResponse.StatusCode.Returns(HttpStatusCode.OK);
+            itemResponse.Resource.Returns(provider);
+            return itemResponse;
         }
     }
 }
