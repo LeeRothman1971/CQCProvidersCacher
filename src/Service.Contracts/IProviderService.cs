@@ -1,8 +1,7 @@
-﻿namespace Service.Contracts
+﻿namespace Service.Contracts;
+
+public interface IProviderService
 {
-    public interface IProviderService
-    {
-        Task<MatchingProviders?> Get();
-        Task<Provider?> Get(string id);
-    }
+    Task<MatchingProviders?> Get();
+    Task<Provider?> Get(string id);
 }
