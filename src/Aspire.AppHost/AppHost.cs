@@ -8,8 +8,9 @@ var builder = DistributedApplication.CreateBuilder(args);
 var cosmos = builder.AddAzureCosmosDB("cosmos")
     .RunAsPreviewEmulator(emulator =>
     {
-        emulator.WithDataExplorer();
-    });
+        emulator.WithDataExplorer(1234).WithGatewayPort(8081);
+    }).WithAccessKeyAuthentication();
+
 var systemUnderTest = builder.Configuration.GetValue("SystemUnderTest", false);
 if (!systemUnderTest)
 {

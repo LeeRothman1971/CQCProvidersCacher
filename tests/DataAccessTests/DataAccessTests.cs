@@ -4,8 +4,6 @@ using DataAccess;
 using Microsoft.Azure.Cosmos;
 using Service.Contracts;
 using System.Collections.Immutable;
-using Aspire.Hosting.ApplicationModel;
-using Xunit.Sdk;
 
 namespace DataAccessTests;
 
@@ -14,11 +12,11 @@ public class AppHostFixture : IAsyncLifetime
     public DistributedApplication App { get; private set; } = null!;
     public async Task InitializeAsync()
     {
-        var cts = new CancellationTokenSource(TimeSpan.FromSeconds(45));
+        var cts = new CancellationTokenSource(TimeSpan.FromMinutes(5));
         var appHost = await DistributedApplicationTestingBuilder.CreateAsync<AppHost>(
             ["SystemUnderTest=true"], cts.Token);
         App = await appHost.BuildAsync(cts.Token);
-        await App.ResourceNotifications.WaitForResourceAsync("cosmos", KnownResourceStates.Running, cts.Token);
+        await App.ResourceNotifications.WaitForResourceHealthyAsync("cosmos", cts.Token);
         await App.StartAsync(cts.Token);
     }
 
@@ -27,10 +25,10 @@ public class AppHostFixture : IAsyncLifetime
 
 public class ProvidersTests : IClassFixture<AppHostFixture>, IDisposable
 {
-    private const string providerId = "provider-123";
+    private string providerId = "provider-123";
     private readonly CachedProviderData sut;
     private CosmosClient? cosmosClient;
-    private ContainerResponse? containerResponse;
+    private DatabaseResponse? databaseResponse;
 
     public ProvidersTests(AppHostFixture fixture)
     {
@@ -40,58 +38,34 @@ public class ProvidersTests : IClassFixture<AppHostFixture>, IDisposable
 
     private async Task InitializeDataStore(AppHostFixture fixture)
     {
-        string? cosmosEndpointStr = null;
-        try
-        {
-            cosmosEndpointStr = fixture.App.GetEndpoint("cosmos", "https").ToString();
-        }
-        catch (ArgumentException)
-        {
-            try
-            {
-                cosmosEndpointStr = fixture.App.GetEndpoint("cosmos", "http").ToString();
-            }
-            catch (ArgumentException)
-            {
-                // fallback to connection string if no explicit endpoint name is available
-                var conn = await fixture.App.GetConnectionStringAsync("cosmos",
-                    System.Threading.CancellationToken.None);
-                // parse AccountEndpoint=...; from connection string
-                var parts = conn.Split(';', StringSplitOptions.RemoveEmptyEntries);
-                foreach (var p in parts)
+        var connectionString = await fixture.App.GetConnectionStringAsync("cosmos");
+        cosmosClient =
+            new CosmosClient(
+                connectionString: connectionString,
+                new CosmosClientOptions
                 {
-                    if (p.StartsWith("AccountEndpoint=", StringComparison.OrdinalIgnoreCase))
+                    SerializerOptions = new CosmosSerializationOptions
                     {
-                        cosmosEndpointStr = p.Substring("AccountEndpoint=".Length);
-                        break;
-                    }
-                }
-            }
-        }
+                        IgnoreNullValues = true,
+                        Indented = true,
+                        PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
+                    },
+                    HttpClientFactory = () => new HttpClient(new HttpClientHandler
+                    {
+                        ServerCertificateCustomValidationCallback =
+                            HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
+                    }),
+                    ConnectionMode = ConnectionMode.Gateway,
+                    LimitToEndpoint = true
+                });
 
-        if (string.IsNullOrWhiteSpace(cosmosEndpointStr))
+        databaseResponse = await cosmosClient.CreateDatabaseIfNotExistsAsync("cqc");
+        var containerProperties = new ContainerProperties("providers", "/providerId")
         {
-            throw new InvalidOperationException("Could not determine cosmos endpoint from Aspire test host.");
-        }
-
-        cosmosClient = new CosmosClient(accountEndpoint: cosmosEndpointStr,
-            authKeyOrResourceToken:
-            "C2y6yDjf5/R+ob0N8A7Cgv30VRDJIWEHLM+4QDU5DE2nQ9nDuVTqobD4b8mGGyPMbIZnqyMsEcaGQy67XIw/Jw==",
-            new CosmosClientOptions
-            {
-                SerializerOptions = new CosmosSerializationOptions
-                {
-                    IgnoreNullValues = true,
-                    Indented = true,
-                    PropertyNamingPolicy = CosmosPropertyNamingPolicy.CamelCase
-                },
-                HttpClientFactory = () => new HttpClient(new HttpClientHandler
-                {
-                    ServerCertificateCustomValidationCallback =
-                        HttpClientHandler.DangerousAcceptAnyServerCertificateValidator
-                }),
-                ConnectionMode = ConnectionMode.Gateway
-            });
+            DefaultTimeToLive = -1
+        };
+        var throughPut = ThroughputProperties.CreateAutoscaleThroughput(1000);
+        await databaseResponse.Database.CreateContainerIfNotExistsAsync(containerProperties, throughPut);
     }
 
     [Fact]
@@ -99,9 +73,31 @@ public class ProvidersTests : IClassFixture<AppHostFixture>, IDisposable
     {
         var provider = BuildProvider();
         await sut.Save(provider);
+
+        var result = await databaseResponse.Database.GetContainer("providers").ReadItemAsync<Provider>(provider.ProviderId, new PartitionKey(provider.ProviderId));
+        Assert.Equal(provider.ProviderId, result.Resource.ProviderId);
     }
 
-    private static Provider BuildProvider()
+    [Fact]
+    public async Task GivenProviderDoesNotExist_WhenGetThenMustReturnNull()
+    {
+        var result = await sut.Get("pid");
+        Assert.Null(result);
+    }
+
+    [Fact]
+    public async Task GivenProviderDoesExist_WhenGetThenMustReturnProvider()
+    {
+        providerId = "new provider id";
+        var provider = BuildProvider();
+        var container = databaseResponse.Database.GetContainer("providers");
+        await container.CreateItemAsync(provider, new PartitionKey(provider.ProviderId));
+
+        var result = await sut.Get(provider.ProviderId);
+        Assert.Equal(provider.ProviderId, result.ProviderId);
+    }
+
+    private Provider BuildProvider()
     {
         return new Provider
         {
@@ -109,7 +105,8 @@ public class ProvidersTests : IClassFixture<AppHostFixture>, IDisposable
             LocationIds = ImmutableList.Create("loc-1", "loc-2"),
             OrganisationType = "Charity",
             Name = "Test Provider",
-            RegistrationStatus = "Registered"
+            RegistrationStatus = "Registered",
+            Ttl = 123456
         };
     }
 
